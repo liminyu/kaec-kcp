@@ -177,7 +177,7 @@
              mode(3) = 12
              mode(4) = 13
              mode(5) = 14
-            ! mode(6) = 9
+             mode(6) = 9
             !mode(7) = 10
              !mode(8) = 8
              !mode(9) = 9
