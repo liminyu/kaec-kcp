@@ -406,8 +406,8 @@ module shared_mod
           !n=x/dx+0.01D0
 !
 !          rf=1.0+e*x*cos(t)-delx1(x)+eps1(x)*eta(x)*(cos(2.0*t)-1.0)
-!          rf=1.0+e*x*cos(t)-(e*x)**2/8.0+eps1(x)*eta(x)*(cos(2.0*t)-1.0)
-           rf = 1.0 + eps1(x)*cos(theta_s(t,x))
+          rf=1.0+e*x*cos(t)-(e*x)**2/8.0+eps1(x)*eta(x)*(cos(2.0*t)-1.0)
+!           rf = 1.0 + eps1(x)*cos(theta_s(t,x))
         endfunction rf
 !
         function zf(t,x) !!Z/R0 of straight field line coordinates
@@ -415,8 +415,8 @@ module shared_mod
           real(r8) t,x
           real(r8) ::zf
 !
-!          zf=eps1(x)*sin(t)+eps1(x)*eta(x)*sin(2.0*t)
-          zf = eps1(x)*sin(theta_s(t,x))
+          zf=eps1(x)*sin(t)+eps1(x)*eta(x)*sin(2.0*t)
+!          zf = eps1(x)*sin(theta_s(t,x))
         endfunction zf
 
 !
@@ -442,8 +442,8 @@ module shared_mod
           !     *x*betapp(x)/e)*(cos(2.0*t)-1.0D0)
           !endif
 !
-!          rfpr=e*(cos(t)-ddel(x)+2.0*eta(x)*(cos(2.0*t)-1.0)) ! 20240831
-          rfpr = e*cos(theta_s(t,x))-eps1(x)*sin(theta_s(t,x))*thetaspx(t,x)
+          rfpr=e*(cos(t)-ddel(x)+2.0*eta(x)*(cos(2.0*t)-1.0)) ! 20240831
+!          rfpr = e*cos(theta_s(t,x))-eps1(x)*sin(theta_s(t,x))*thetaspx(t,x)
         endfunction rfpr
 !
        function rfpx(t,x)
@@ -451,8 +451,8 @@ module shared_mod
           real(r8) t,x
           real(r8) ::rfpx
 !
-          rfpx = e*cos(theta_s(t,x))-eps1(x)*sin(theta_s(t,x))*thetaspx(t,x)
-!
+!          rfpx = e*cos(theta_s(t,x))-eps1(x)*sin(theta_s(t,x))*thetaspx(t,x)
+          rfpx=e*(cos(t)-ddel(x)+2.0*eta(x)*(cos(2.0*t)-1.0)) ! 20240831
         endfunction rfpx
 !
         function rfpt(t,x)
@@ -461,8 +461,8 @@ module shared_mod
           real(r8) ::rfpt
 !
 !          rfpt=-x*sin(t)-2.0*x*eta_r(x)*sin(2.0*t)
-!          rfpt=-eps1(x)*sin(t)-2.0*eps1(x)*eta(x)*sin(2.0*t) ! 20240831
-           rfpt =-eps1(x)*sin(theta_s(t,x))*thetaspt(t,x)
+          rfpt=-eps1(x)*sin(t)-2.0*eps1(x)*eta(x)*sin(2.0*t) ! 20240831
+!           rfpt =-eps1(x)*sin(theta_s(t,x))*thetaspt(t,x)
         endfunction rfpt
 !
 !
@@ -497,8 +497,8 @@ module shared_mod
           implicit none
           real(r8) t,x
           real(r8) ::grr
-          grr=1.0
-          !grr=1.0+2.0*ddel(x)*cos(t)
+          !grr=1.0
+          grr=1.0+2.0*ddel(x)*cos(t)
         endfunction grr
 !
         function grt(t,x)
@@ -508,8 +508,8 @@ module shared_mod
           if(x.le.1.0D-3) x=1.0D-3
           if(x.ge.1.0D0) x=1.0-1e-06
 
-          grt=-thetaspx(t,x)/thetaspt(t,x)
-          ! grt=-(eps1(x)+2.0*ddel(x))*sin(t)/x
+          !grt=-thetaspx(t,x)/thetaspt(t,x)
+           grt=-(eps1(x)+2.0*ddel(x))*sin(t)/x
         endfunction grt
 !
         function gzz(t,x)
@@ -529,8 +529,8 @@ module shared_mod
           implicit none
           real(r8) t,x
           real(r8) ::gtt
-          gtt=1.0/x**2/rf2(t,x)+grt(t,x)**2
-          !gtt=(1.0-2.0*(eps1(x)+ddel(x))*cos(t))/x**2
+          !gtt=1.0/x**2/rf2(t,x)+grt(t,x)**2
+          gtt=(1.0-2.0*(eps1(x)+ddel(x))*cos(t))/x**2
         endfunction gtt
 !
         function f_C1tt(t,x)
@@ -1113,16 +1113,16 @@ module shared_mod
           implicit none
           real(r8) t,x
           real(r8) ::grrpx
-          grrpx=0.0
-          !grrpx=e*cos(t)/2.0
+          !grrpx=0.0
+          grrpx=e*cos(t)/2.0
         endfunction grrpx
 !
         function grrpt(t,x)
           implicit none
           real(r8) t,x
           real(r8) ::grrpt
-          grrpt=0.0
-          !grrpt = -2.0*ddel(x)*cos(t)
+          !grrpt=0.0
+          grrpt = -2.0*ddel(x)*cos(t)
         endfunction grrpt
 
 !
@@ -1133,9 +1133,9 @@ module shared_mod
           if(x.le.1.0D-3) x=1.0D-3
           if(x.ge.1.0D0) x=1.0-1e-06
 !
-          gtrpt=-thetaspxt(t,x)/thetaspt(t,x)-&
-                 rfpt(t,x)/thetaspt(t,x)*grt(t,x)
-          !gtrpt=-(eps1(x)+2.0*ddel(x))*cos(t)/x
+          !gtrpt=-thetaspxt(t,x)/thetaspt(t,x)-&
+          !       rfpt(t,x)/thetaspt(t,x)*grt(t,x)
+          gtrpt=-(eps1(x)+2.0*ddel(x))*cos(t)/x
         endfunction gtrpt
 !
         function gtrpptx(t,x)
