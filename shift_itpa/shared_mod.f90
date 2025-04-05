@@ -4,9 +4,9 @@ module vars
   integer :: nprt,nomode,nopmode,ntor,midx
   integer numL,nE,nt,pa,pb, nrho,iname0
   integer, allocatable :: mode(:),pmode(:)
-  real(sp) :: rhoh_bar,vh,rmaj,omeg0,ekev,zprt,bkg,prot,vA_bar
+  real(sp) :: rhoh_bar,vh,rmaj,omeg0,ekev,zprt,zprt0,bkg,prot,vA_bar
   real(sp) :: La,Lb,Ea,Eb,E0,Ed,Ec,L0,Ld,rr0,rrd,prot0
-  real(sp) :: rhoh, ne0, v_A0
+  real(sp) :: rhoh, ne0, v_A0,rhoi_bar,pi0,ti0
   real(sp) :: Ec32,E32,tE,tL,Cn
   real(sp), allocatable :: en(:), mube(:),ptch(:),ptcha(:),dxa(:),dE0(:)
   real(sp), allocatable :: pz0(:),dLa(:),dpz0(:),gridx2(:),gridpsi2(:)
@@ -56,8 +56,8 @@ module vars_e
  implicit none
  integer, parameter, private :: r8 = selected_real_kind(12,100)
  real(r8) :: e ! !aspect rate:e=a/R_0
- real(r8) :: etai,eta_i
- complex(r8) :: omg,lam_omg !omega_mode, resisitive eta_i, eigen_value
+ real(r8) :: etai,eta ! artificial number for resonance etai
+ complex(r8) :: omg,lam !omega_mode, resisitive eta, eigen_value
  complex(kind=4) :: rho
  real(r8) :: q0,q1,cq1,xini,xend !qfundat
  real(r8) :: delta ! step of raidal grids xgrid1
@@ -81,6 +81,9 @@ module vars_e
  real(r8), allocatable :: C4tt(:,:) ! pressure_tt
  real(r8), allocatable :: C4rr(:,:) ! pressure_rr
  real(r8), allocatable :: C4tr(:,:) ! pressure_tr
+ real(r8), allocatable :: C8tt(:,:) ! diamagnetic_tt
+ real(r8), allocatable :: C8tr(:,:) ! diamagnetic_tr
+ real(r8), allocatable :: C8rr(:,:) ! diamagnetic_rr
  integer nog ! nogr radial grid
 end module vars_e
 
@@ -119,7 +122,7 @@ module shared_mod
       integer :: m
       real(r8) :: x, xi0,h0,etax
         xi0=abs(0.3D0/ak1(x,m))/sqrt(tfun(x))
-        etax=etai*den(x)/tfun(x)**1.5
+        etax=eta*den(x)/tfun(x)**1.5
         zio=xi0*sqrt(omg)*cmplx(1.0,etax)
         zin=xi0*sqrt(omg)*cmplx(0.0,etax)
 !        if(xi0.gt.10.0D0)xi0=10.0D0
@@ -133,12 +136,12 @@ module shared_mod
         endif
 !        h0=-0.5*xi0*exp(-xi0**2)*1.77245
          h0=-0.00D0
-!        gfun=(0.4D0)**2*cmplx(1.0D0,-etai)*tfun(x)
+!        gfun=(0.4D0)**2*cmplx(1.0D0,-eta)*tfun(x)
 !        gfun=ak1(x,m)**2*(cmplx(0.375D0,h0)+0.5*fzout)*tfun(x)
 !        gfun=ak1(x,m)**2*(cmplx(0.88D0,h0)*tfun(x)+cmplx(0.0D0,-1.0D0)*eta/tfun(x)**1.5D0) 
 !        gfun=(ak1(x,m)**2*cmplx(0.5D0,h0)+0.04*den(x))*tfun(x)
 !resistive         gfun=cmplx(0.0D0,-1.0D0)*ak1(x,m)**2
-          gfun=cmplx(1.0D0,0.0)*lam_omg
+          gfun=cmplx(1.0D0,0.0)*lam
 !        gfun=cmplx(0.0D0,-1.0D0)*exp(-(x-1.0)**2/1.0)
 !        gfun=cmplx(0.16,0.0D0)
         if(x.gt.1.0D0)gfun=cmplx(0.0D0,0.0D0)
@@ -262,6 +265,7 @@ module shared_mod
           else
           al=-2.0D0*qfun(x)**2*betap(x)/e
           ddel=(e*x+al)/4.0
+         ! ddel = e*x/4.0
           endif
  !      
         endfunction ddel
@@ -280,63 +284,76 @@ module shared_mod
           endif
         endfunction ddel1
 !
-      !  subroutine delx !Shafranov shift :Delta(r)
-      !    implicit none
-      !    real,parameter ::pi=3.14159265358979, two_pi=6.28318530717959d0
-      !    integer i,j,k !j:index of theta(j*theta),m:maxium of j
-      !    
-      !    integer,parameter ::n=101,nq=4,nog1=800,n1=nq*nog1 !n:integral steps
+        subroutine delx !Shafranov shift :Delta(r)
+          implicit none
+          real,parameter ::pi=3.14159265358979, two_pi=6.28318530717959d0
+          integer i,j,k !j:index of theta(j*theta),m:maxium of j
+          
+          integer,parameter ::n=101,nq=4,nog1=800,n1=nq*nog1 !n:integral steps
        
-      !    real(r8) x,dt,s,t,ta,tb,dx,y
-      !    real(r8) :: fi(2010)
-      !    if (allocated(del)) then
-      !      deallocate(del)
-      !    endif
-      !    allocate(del(n1))
-          !!          real(r8) ::f_C1tt
-!        dt=5.0D-4
-      !    dx=delta/float(nq)
-        !           dt=two_pi/real(n)
-        !           ta=0.0
-        !           tb=two_pi
+          real(r8) x,dt,s,t,ta,tb,dx,y
+          real(r8) :: fi(2010)
+          if (allocated(del)) then
+            deallocate(del)
+          endif
+          allocate(del(n1))
+          dx=delta/float(nq)
         !
-        !  do k=0,nq*nog
-       !      x=dx*k+xini
-           !          write(30,*)'x=',x
-      !       if (x==0.0) then
-      !          x=1.0D-6
-      !       endif
-      !       dt=(1.0D0-x)/float(n-1)
+          do k=0,nq*nog
+             x=dx*k+xini
+             if (x==0.0) then
+                x=1.0D-6
+             endif
+             dt=(xend-x)/float(n-1)
 !              dt=x/float(n-1)
-      !       do i=1,n
-      !          t=(i-1)*dt+x
-!                 t=(i-1)*dt
-      !          fi(i)=ddel1(t)
-      !       enddo
+             do i=1,n
+                t=(i-1)*dt+x-1.0D-6
+!                t=(i-1)*dt
+                fi(i)=ddel1(t)
+             enddo
              !
-      !       call simp(n,dt,fi,s)
+             call simp(n,dt,fi,s)
                    !
-      !       del(k)=-s
-      !       write(30,*) x, del(k)
-      !    enddo
-      !  endsubroutine delx
+             del(k)=-s
+             write(1003,*) x, del(k)
+          enddo
+        endsubroutine delx
 !
         function delx1(x)!analytic Delta(x) Shafranov shift
           implicit none
           real(r8) :: x, dum, dum1
           real(r8) :: delx1
-          dum = e**2*x**2/8+&
-                b0/2*(0.2*q0**2*x**2/4+&
-                      1.9*q0**2*x**2/2+&
-                      0.064*q0*x**6/6+&
-                      0.608*q0*x**4/4+&
-                      0.00512*x**8/8+&
-                      0.04864*x**6/6)
+          !dum = e**2*x**2/8+&
+          !      b0/2*(0.2*q0**2*x**2/4+&
+          !            1.9*q0**2*x**2/2+&
+          !            0.064*q0*x**6/6+&
+          !            0.608*q0*x**4/4+&
+          !            0.00512*x**8/8+&
+          !            0.04864*x**6/6)
           !dum1 = e**2/8+b0/2*(0.2*q0**2/4+&
           !           1.9*q0**2/2+0.064*q0/6+&
           !           0.608*q0/4+0.00512/8+&
           !           0.04864/6)
           !delx1= dum - dum1
+          !dum = 0.08031*x -0.1491*x**2 +0.1371*x**3 &
+          !      -0.04934 *x**4
+          !dum = 9.70e-3*x+4.21e-2*x**2-& ! q0=1.30
+          !      9.666e-2*x**3+7.855e-2*x**4-&
+          !      2.348e-2*x**5
+          !dum = 9.699e-3*x+4.212e-2*x**2-& ! q0=1.26
+          !      9.677e-2*x**3+7.839e-2*x**4-&
+          !      2.329e-2*x**5
+          dum = 9.70e-3*x+4.209e-2*x**2-& ! q0=1.32
+                9.661e-2*x**3+7.864e-2*x**4-&
+                2.358e-2*x**5
+          !dum = 9.699e-3*x+4.211e-2*x**2-& ! q0=1.28
+          !      9.672e-2*x**3+7.847e-2*x**4-&
+          !      2.338e-2*x**5
+
+
+
+
+
           delx1 = dum
         endfunction delx1      
 
@@ -348,13 +365,13 @@ module shared_mod
           eps1=e*x
         endfunction eps1
 !
-        function eta(x)
+        function eta_r(x)
           implicit none
           real(r8) x
 !          common/aspect/e
-          real(r8) ::eta
-          eta=(ddel(x)+eps1(x))/2.0D0
-        endfunction eta
+          real(r8) ::eta_r
+          eta_r=(ddel(x)+eps1(x))/2.0D0
+        endfunction eta_r
 !
         function theta_s(t,x)
           implicit none
@@ -400,14 +417,15 @@ module shared_mod
           real(r8) t,x,dx
           real(r8) ::rf
 !
-          if(x==0.0D0) x=1.0D-6
+          if(x.le.1.0D-6) x=1.0D-6
+          if(x.ge.1.0D0) x=1.0-1e-6
           !dx=delta/float(nq)
-!        x=0.5D0
+!         x=0.5D0
           !n=x/dx+0.01D0
 !
-!          rf=1.0+e*x*cos(t)-delx1(x)+eps1(x)*eta(x)*(cos(2.0*t)-1.0)
-          rf=1.0+e*x*cos(t)-(e*x)**2/8.0+eps1(x)*eta(x)*(cos(2.0*t)-1.0)
-!           rf = 1.0 + eps1(x)*cos(theta_s(t,x))
+          !rf=1.0+e*x*cos(t)-delx1(x)+eps1(x)*eta_r(x)*(cos(2.0*t)-1.0)
+          rf=1.0+e*x*cos(t)-(e*x)**2/8.0+eps1(x)*eta_r(x)*(cos(2.0*t)-1.0)
+           !rf = 1.0 + eps1(x)*cos(theta_s(t,x))
         endfunction rf
 !
         function zf(t,x) !!Z/R0 of straight field line coordinates
@@ -415,7 +433,9 @@ module shared_mod
           real(r8) t,x
           real(r8) ::zf
 !
-          zf=eps1(x)*sin(t)+eps1(x)*eta(x)*sin(2.0*t)
+          if(x.le.1.0D-6) x=1.0D-6
+          if(x.ge.1.0D0) x=1.0-1e-6          
+          zf=eps1(x)*sin(t)+eps1(x)*eta_r(x)*sin(2.0*t)
 !          zf = eps1(x)*sin(theta_s(t,x))
         endfunction zf
 
@@ -442,8 +462,8 @@ module shared_mod
           !     *x*betapp(x)/e)*(cos(2.0*t)-1.0D0)
           !endif
 !
-          rfpr=e*(cos(t)-ddel(x)+2.0*eta(x)*(cos(2.0*t)-1.0)) ! 20240831
-!          rfpr = e*cos(theta_s(t,x))-eps1(x)*sin(theta_s(t,x))*thetaspx(t,x)
+          rfpr=e*(cos(t)-ddel(x)+2.0*eta_r(x)*(cos(2.0*t)-1.0)) ! 20240831
+          !rfpr = e*cos(theta_s(t,x))-eps1(x)*sin(theta_s(t,x))*thetaspx(t,x)
         endfunction rfpr
 !
        function rfpx(t,x)
@@ -451,8 +471,9 @@ module shared_mod
           real(r8) t,x
           real(r8) ::rfpx
 !
-!          rfpx = e*cos(theta_s(t,x))-eps1(x)*sin(theta_s(t,x))*thetaspx(t,x)
+          rfpx = e*cos(theta_s(t,x))-eps1(x)*sin(theta_s(t,x))*thetaspx(t,x)
           rfpx=e*(cos(t)-ddel(x)+2.0*eta(x)*(cos(2.0*t)-1.0)) ! 20240831
+!
         endfunction rfpx
 !
         function rfpt(t,x)
@@ -461,8 +482,8 @@ module shared_mod
           real(r8) ::rfpt
 !
 !          rfpt=-x*sin(t)-2.0*x*eta_r(x)*sin(2.0*t)
-          rfpt=-eps1(x)*sin(t)-2.0*eps1(x)*eta(x)*sin(2.0*t) ! 20240831
-!           rfpt =-eps1(x)*sin(theta_s(t,x))*thetaspt(t,x)
+          rfpt=-eps1(x)*sin(t)-2.0*eps1(x)*eta_r(x)*sin(2.0*t) ! 20240831
+           !rfpt =-eps1(x)*sin(theta_s(t,x))*thetaspt(t,x)
         endfunction rfpt
 !
 !
@@ -471,16 +492,16 @@ module shared_mod
           implicit none
           real(r8) x,t
           real(r8) ::jf
-          jf=x*rf2(t,x)
-          !jf=x*(1.0+2.0*eps1(x)*cos(t))
+          !jf=x*rf2(t,x)
+          jf=x*(1.0+2.0*eps1(x)*cos(t))
         endfunction jf
 !
         function jfpx(t,x)
           implicit none
           real(r8) x,t
           real(r8) ::jfpx
-          jfpx=rf2(t,x)+2.0*x*rf(t,x)*rfpr(t,x)
-          !jfpx=1.0+4.0*eps1(x)*cos(t)
+          !jfpx=rf2(t,x)+2.0*x*rf(t,x)*rfpr(t,x)
+          jfpx=1.0+4.0*eps1(x)*cos(t)
         endfunction jfpx
 
 !
@@ -488,8 +509,8 @@ module shared_mod
           implicit none
           real(r8) x,t
           real(r8) ::jfpt
-          jfpt=2.0*x*rf(t,x)*rfpt(t,x)
-          !jfpt=-x*(2.0*eps1(x)*sin(t))
+          !jfpt=2.0*x*rf(t,x)*rfpt(t,x)
+          jfpt=-x*(2.0*eps1(x)*sin(t))
         endfunction jfpt
 
 !
@@ -505,7 +526,7 @@ module shared_mod
           implicit none
           real(r8) t,x
           real(r8) ::grt
-          if(x.le.1.0D-3) x=1.0D-3
+          if(x.le.1.0D-6) x=1.0D-6
           if(x.ge.1.0D0) x=1.0-1e-06
 
           !grt=-thetaspx(t,x)/thetaspt(t,x)
@@ -517,11 +538,11 @@ module shared_mod
           real(r8) t,x
           real(r8) :: gzz
 !          common/aspect/e
-          if(x.le.1.0D-3) x=1.0D-3
+          if(x.le.1.0D-6) x=1.0D-6
           if(x.ge.1.0D0) x=1.0-1e-06
 
-          gzz=1.0/rf(t,x)/rf(t,x)
-          !gzz=1.0-2.0*eps1(x)*cos(t)
+          !gzz=1.0/rf(t,x)/rf(t,x)
+          gzz=1.0-2.0*eps1(x)*cos(t)
         endfunction gzz
 
 !
@@ -825,9 +846,7 @@ module shared_mod
        do i=1,n
            !dum = inrcsval(gridx2,cscoefxpsi,x(i),0)/pw
            !write(42,441) dum,den(dum),denp(dum)
-           !write(42,441) x(i),den(x(i)),denp(x(i))
-           dum = inrcsval(gridx2,cscoefxpsi,x(i),0)/pw
-           write(42,441) dum,den_h(dum),denp_h(dum)
+           write(42,441) x(i),beta(x(i)),den(x(i))
         enddo
         close(40)
         close(41)
@@ -1114,7 +1133,10 @@ module shared_mod
           real(r8) t,x
           real(r8) ::grrpx
           !grrpx=0.0
-          grrpx=e*cos(t)/2.0
+          grrpx = e*cos(t)/2.0
+          !grrpx = e*cos(t)/2.0-&
+          !     (2.0*qfun(x)*dqfun(x)*betap(x)+&
+          !      qfun(x)**2*betapp(x))*cos(t)/e
         endfunction grrpx
 !
         function grrpt(t,x)
@@ -1122,7 +1144,7 @@ module shared_mod
           real(r8) t,x
           real(r8) ::grrpt
           !grrpt=0.0
-          grrpt = -2.0*ddel(x)*cos(t)
+          grrpt = -2.0*ddel(x)*sin(t)
         endfunction grrpt
 
 !
@@ -1338,6 +1360,245 @@ module shared_mod
 !
         endfunction theta3
 !
+        function f_C8tt(t,x)
+          implicit none
+          real(r8) t,x
+          real(r8) ::f_C8tt
+          f_C8tt=b_norpt(t,x)*gtt(t,x)/b_nor(t,x)**5
+        endfunction f_C8tt
+!
+        function f_C8tr(t,x)
+          implicit none
+          real(r8) t,x
+          real(r8) ::f_C8tr
+          f_C8tr=b_norpt(t,x)*grt(t,x)/b_nor(t,x)**5  
+        endfunction f_C8tr
+!
+        function f_C8rr(t,x)
+          implicit none
+          real(r8) t,x
+          real(r8) ::f_C8rr
+          f_C8rr=b_norpt(t,x)*grr(t,x)/b_nor(t,x)**5
+        endfunction f_C8rr
+!
+        subroutine C8_tt!get fourier coupling coefficients
+          implicit none
+          real,parameter ::pi=3.14159265358979, two_pi=6.28318530717959d0
+          integer i,j,k !j:index of theta(j*theta),m:maxium of j
+          integer,parameter ::n=15,m=3,nq=4,nog1=800,n1=nq*nog1 !n:integral steps
+          real(r8) x,dt,s,t,ta,tb,dx
+          real(r8) :: fi(n)
+          if (allocated(C8tt)) then
+            deallocate(C8tt)
+          endif
+          allocate(C8tt(0:m,0:n1))
+          dt=pi/float(n-1)
+          dx=delta/float(nq)
+!
+       do k=0,nq*nog
+          x=dx*k+xini
+          if (x==0.0) then
+           x=1.0D-6
+          endif
+          do j=1,m
+             do i=1,n
+                t=(i-1)*dt
+                fi(i)=f_C8tt(t,x)*sin(float(j)*t)
+             enddo
+!
+             call simp(n,dt,fi,s)
+             C8tt(j,k)=2*s/pi
+          enddo
+       enddo
+        endsubroutine C8_tt
+!
+        subroutine C8_tr
+          implicit none
+          real,parameter ::pi=3.14159265358979, two_pi=6.28318530717959d0
+          integer i,j,k !j:index of theta(j*theta),m:maxium of
+          integer,parameter ::n=15,m=3,nq=4,nog1=800,n1=nq*nog1 !n:integral steps
+          real(r8) x,dt,s,t,ta,tb,dx
+          real(r8) :: fi(n)
+!
+          if (allocated(C8tr)) then
+            deallocate(C8tr)
+          endif
+          allocate(C8tr(0:m,0:n1))
+          dt=pi/float(n-1)
+          dx=delta/float(nq)
+!
+       do k=0,nq*nog
+          x=dx*k+xini
+          if (x==0.0)then
+            x=1.0D-6
+          endif
+          do j=0,m
+             do i=1,n
+                t=(i-1)*dt
+                fi(i)=f_C8tr(t,x)*cos(float(j)*t)
+             enddo
+             call simp(n,dt,fi,s)
+              if (j==0)then
+                C8tr(j,k)=s/pi
+             else
+                C8tr(j,k)=2*s/pi
+             endif
+          
+          enddo
+       enddo
+     endsubroutine C8_tr
+!
+      subroutine C8_rr!get fourier coupling coefficients
+          implicit none
+          real,parameter ::pi=3.14159265358979, two_pi=6.28318530717959d0
+          integer i,j,k !j:index of theta(j*theta),m:maxium of
+          integer,parameter ::n=15,m=3,nq=4,nog1=800,n1=nq*nog1 !n:integral steps
+          real(r8) x,dt,s,t,ta,tb,dx
+          real(r8) :: fi(n)
+          if (allocated(C8rr)) then
+            deallocate(C8rr)
+          endif
+          allocate(C8rr(0:m,0:n1))
+          dt=pi/float(n-1)
+          dx=delta/float(nq)
+!
+       do k=0,nq*nog
+          x=dx*k+xini
+          if (x==0.0) then
+           x=1.0D-6
+          endif
+          do j=1,m
+             do i=1,n
+                t=(i-1)*dt
+                fi(i)=f_C8rr(t,x)*sin(float(j)*t)
+             enddo
+!
+             call simp(n,dt,fi,s)
+             C8rr(j,k)=2*s/pi
+          enddo
+       enddo
+      endsubroutine C8_rr
+!
+      function gamma8(x,k,m,j)
+       implicit none
+       integer m,j,k,jp,i,n
+       integer,parameter ::m1=3,nq=4,nog1=800,n1=nq*nog1 !m1:max number of fourier coefficients
+       real(r8) x,x1
+       real(r8) ::gamma8
+!
+       x1=x-xini
+       n=x1*float(nq)/delta+0.01D0
+
+! 
+       jp=abs(j)
+       if (jp<=m1)then
+!
+          if (jp==0) then
+             gamma8=0.0
+             return
+          elseif (k-m+jp==0)then
+             gamma8=C8tt(jp,n)*float(k*m)/2.0
+          elseif (k-m-jp==0)then
+             gamma8=-C8tt(jp,n)*float(k*m)/2.0
+          endif
+       else
+          gamma8=0.0
+       endif
+!
+      endfunction gamma8
+!
+!
+      function delta8(x,k,m,j)
+       implicit none
+      
+       real(r8) ::delta8
+!
+       integer m,j,k,jp,i,n
+       integer,parameter ::m1=3,nq=4,nog1=800,n1=nq*nog1 !m1:max number of fourier coefficients
+       real(r8) x,x1
+!
+       x1=x-xini
+       n=x1*float(nq)/delta+0.01D0      
+!
+       jp=abs(j)
+       if(jp<=m1)then
+!
+!
+          if (jp==0) then
+             delta8=float(k)*C8tr(jp,n)
+             return
+          elseif (k-m+jp==0)then
+             delta8=float(k)*C8tr(jp,n)/2.0
+          elseif(k-m-jp==0)then
+             delta8=float(k)*C8tr(jp,n)/2.0
+          endif
+       else
+          delta8=0.0
+       endif
+!
+      endfunction delta8
+!
+      function theta8(x,k,m,j)
+       implicit none
+       
+       real(r8) ::theta8
+!
+       integer m,j,k,jp,i,n
+       integer,parameter ::m1=3,nq=4,nog1=800,n1=nq*nog1 !m1:max number of fourier coefficients
+       real(r8) x,x1
+!
+       x1=x-xini
+       n=x1*float(nq)/delta+0.01D0      
+!
+       jp=abs(j)
+       if (jp<=m1) then
+!
+!
+          if (jp==0) then
+             theta8=float(m)*C8tr(jp,n)
+             return
+          elseif (k-m+jp==0)then
+             theta8=float(m)*C8tr(jp,n)/2.0
+          elseif(k-m-jp==0)then
+             theta8=float(m)*C8tr(jp,n)/2.0
+          endif
+       else
+          theta8=0.0
+       endif
+!
+      endfunction theta8
+!
+!
+      function lammbda8(x,k,m,j)
+       implicit none
+       
+       real(r8) ::lammbda8
+!
+       integer m,j,k,jp,i,n
+       
+       integer,parameter ::m1=3,nq=4,nog1=800,n1=nq*nog1 !m1:max number of fourier coefficients
+       real(r8) x,x1
+!
+       x1=x-xini
+       n=x1*float(nq)/delta+0.01D0      
+!
+       jp=abs(j)
+       if (jp<=m1) then
+!
+!
+          if (jp==0) then
+             lammbda8=0.0
+             return
+          elseif (k-m+jp==0)then
+             lammbda8=C8rr(jp,n)/2.0
+          elseif (k-m-jp==0)then
+             lammbda8=-C8rr(jp,n)/2.0
+          endif
+       else
+          lammbda8=0.0
+       endif
+!
+      endfunction lammbda8
 !
         function beta(x) ! normalized pressure, P/B^2
           implicit none
@@ -1348,9 +1609,9 @@ module shared_mod
           !dum = dum/1.0 ! for q=q(psi)
           !beta=b0*(1-x**2)!beta(0)=0.2%
 !           beta=0.0
-!          beta=b0*(1.0 - 0.95*dum - 0.05*dum**2)
-          beta=b0*(1.0D0-x**2)
-          ! beta=b0*(1-x**2)**3
+          beta=b0*(1.0 - 0.95*dum - 0.05*dum**2)
+          !beta=b0*(1.0D0-x**2)
+!           beta=b0*(1-x**2)**3
 !           beta=b0
 !        beta=b0*(6.0141D0*x**5-19.613D0*x**4+22.183D0*x**3-9.6863D0*x**2+0.11273D0*x+0.99488D0)
 !          beta=b0*(0.97996D0-10.79691D0*x**2+63.52315D0*x**4-213.40D0*x**6+&
@@ -1372,56 +1633,56 @@ module shared_mod
           dum = dum/pw ! for q=q(r)
           dum1 = dum1/pw
           !dum = dum/1.0 ! for q=q(psi)
-          !betap=-2*b0*x
+!          betap=-2*b0*x
 !           betap=0.0
-!          betap=b0*(-0.95-0.1*dum)*dum1
+          betap=b0*(-0.95-0.1*dum)*dum1
 !       betap=b0*(30.0705D0*x**4-78.452D0*x**3+66.549D0*x**2-19.3726D0*x+0.11273D0)          
 !       betap=b0*(-21.59382D0*x+254.0926D0*x**3-1280.4D0*x**5+3358.16D0*x**7-47.42163D0*x**9+3416.328D0*x**11-983.10338D0*x**13)
 !        betap=b0*(-13.231D0*exp(-5.396D0*x)+13.96636D0*exp(-9.566D0*x))
 !        betap=b0*(119.7D0*x**5-332.55D0*x**4+314.28D0*x**3-111.87D0*x**2+10.07D0*x-0.7637D0)
 !        betap=b0*(-47.125D0*x**4+72.76D0*x**3-25.794D0*x**2-1.7138D0*x-0.3393D0)
-        betap=b0*(-2.0D0*x)
+!        betap=b0*(-2.0D0*x)
 !        betap=b0*( - 2.0*0.95*x- 4.0*0.05*x**3) ! ITPA n=6
-!         betap=-6.0D0*b0*(1-x**2)**2*x
+         !betap=-6.0D0*b0*(1-x**2)**2*x
         endfunction betap
 !
         function betapp(x)
           implicit none
           real(r8) x, dum, dum1, dum2
           real(r8) :: betapp
-!          dum = inrcsval(gridx2,cscoefxpsi,x,0) ! psi
-!          dum1 = inrcsval(gridx2,cscoefxpsi,x,1) ! dpsi/dx
-!          dum2 = inrcsval(gridx2,cscoefxpsi,x,2) ! dpsi^2/dx^2
-!          dum = dum/pw ! for q=q(r)
-!          dum1 = dum1/pw
-!          dum2 = dum2/pw
+          dum = inrcsval(gridx2,cscoefxpsi,x,0) ! psi
+          dum1 = inrcsval(gridx2,cscoefxpsi,x,1) ! dpsi/dx
+          dum2 = inrcsval(gridx2,cscoefxpsi,x,2) ! dpsi^2/dx^2
+          dum = dum/pw ! for q=q(r)
+          dum1 = dum1/pw
+          dum2 = dum2/pw
           !dum = dum/1.0 ! for q=q(psi)
-          betapp=-2*b0
+!          betapp=-2*b0
 !           betap=0.0
-!          betapp=b0*((-0.1)*dum1+&
-!                 (-0.95-0.1*dum)*dum2)
+          betapp=b0*((-0.1)*dum1+&
+                 (-0.95-0.1*dum)*dum2)
 !           betapp=b0*( - 2.0*0.95- 3.0*4.0*0.05*x**2) ! ITPA n=6
-!         betapp=24.0D0*b0*(1-x**2)*x**2-6.0D0*b0*(1-x**2)**2
+!          betapp=24.0D0*b0*(1-x**2)*x**2-6.0D0*b0*(1-x**2)**2
         endfunction betapp
 !
         function kappa_r(t,x)
           implicit none
           real(r8) x,t
           real(r8) ::kappa_r
-!          kappa_r=-rfpr(t,x)/rf(t,x)-e**2*x/(qfun(x)*rf(t,x))**2
-!           kappa_r=-rfpr(t,x)*(1-e*cos(t))-e**2*x*(1-2*e*cos(t))/(qfun(x))**2
+          !kappa_r=-rfpr(t,x)/rf(t,x)-e**2*x/(qfun(x)*rf(t,x))**2
+           kappa_r=-rfpr(t,x)*(1-e*cos(t))-e**2*x*(1-2*e*cos(t))/(qfun(x))**2
 !           kappa_r=-e*rfpr(t,x)/rf(t,x)-e**2*x/(qfun(x)*rf(t,x))**2
-          kappa_r=b_norpx(t,x)/b_nor(t,x)
+!          kappa_r=b_norpx(t,x)/b_nor(t,x)
         endfunction kappa_r
 !
         function kappa_t(t,x)
           implicit none 
           real(r8) t,x
           real(r8) ::kappa_t
-!          kappa_t=-rfpt(t,x)/rf(t,x)
-!           kappa_t=-rfpt(t,x)*(1-e*cos(t))
+          !kappa_t=-rfpt(t,x)/rf(t,x)
+           kappa_t=-rfpt(t,x)*(1-e*cos(t))
 !            kappa_t=-e*rfpt(t,x)/rf(t,x)
-          kappa_t = b_norpt(t,x)/b_nor(t,x)
+!          kappa_t = b_norpt(t,x)/b_nor(t,x)
         endfunction kappa_t
 !
       function b_nor(t,x) ! B/B(0)
@@ -1531,7 +1792,7 @@ module shared_mod
           real(r8) :: xa,xb
           real(r8) :: eps
           !dum1 = mube*b_nor(theta,x)+2.0*(1.0-mube*b_nor(theta,x))
-           dum1 = 2.0/b_nor(theta,x)-mube
+          dum1 = 2.0/b_nor(theta,x)-mube
           dum2 = 1.0/b_nor(theta,x)/jf(theta,x)
           realfuny = dum1*dum2*(-kappa_t(theta,x)*femp(j,m,x)*&
                 cos(float(nq)*phi1-float(m)*theta-float(p)*wtheta*t)+&
@@ -1551,7 +1812,7 @@ module shared_mod
           real(r8) :: xa,xb
           real(r8) :: eps
           !dum1 = mube*b_nor(theta,x)+2.0*(1.0-mube*b_nor(theta,x)) !b~=R/R0
-           dum1 = 2.0/b_nor(theta,x)-mube
+          dum1 = 2.0/b_nor(theta,x)-mube
           dum2 = 1.0/b_nor(theta,x)/jf(theta,x)
           imagfuny = dum1*dum2*(-kappa_t(theta,x)*femp(j,m,x)*&
                  sin(float(nq)*phi1-float(m)*theta-float(p)*wtheta*t)-&
@@ -1868,6 +2129,9 @@ module shared_mod
           call C4_tt
           call C4_rr
           call C4_tr
+          call C8_tt
+          call C8_rr
+          call C8_tr
          ! call KCT4D
         endsubroutine set_couple_coefficients
 !
@@ -2264,8 +2528,8 @@ module shared_mod
        den=den+cden(i+1)*xx**i
        enddo
        !den=den-dedge*exp((x1-1.0)/dalpha)
-       den=1.0D0
-       !den=(1.00001-0.8*x**1.6)**1.8
+        den=1.0D0
+       ! den=(1.00001-0.8*x**1.6)**1.8 ! hl-2a
        end function den
 
        function den_h(psi)
@@ -2310,10 +2574,25 @@ module shared_mod
        enddo
        !denp=denp-dedge*exp((x-1.0)/dalpha)/dalpha
        if(x.gt.1.0D0)denp=0.0D0
-        denp=0.0D0    
-        !denp=-2.304*(1.00001-0.8*x**1.6)**0.8*x**0.6
+       denp=0.0D0    
+       !denp=-2.304*(1.00001-0.8*x**1.6)**0.8*x**0.6 !hl-2a
        end function denp
 !  
+      function logdenp(x)
+       implicit none
+       integer i,nfit
+       parameter(nfit=5)
+       real(r8) :: x,xx,logdenp
+       !xx=x**2
+       !do i=1,nfit-1
+       !  denp=denp+(2*i)*cden(i+1)*x**(2*i-1)
+       !  enddo
+       !  denp=denp-dedge*exp((x-1.0)/dalpha)/dalpha
+       !  if(x.gt.1.0D0)logdenp=0.0D0
+       !  !denp=0.0D0    
+       logdenp= denp(x)/den(x)
+      end function logdenp
+!
        function denp_h(psi)
        implicit none
        real(r8) :: psi,denp_h
@@ -2346,6 +2625,20 @@ module shared_mod
         tfun=1.0D0        
         end function tfun
 !  
+      function tfunp(x)
+       implicit none
+         integer i,nfit
+         parameter(nfit=5)
+         real(r8) :: x,xx,tfunp
+        !tfunp=ctem(1)*2.0D0
+        !xx=x**2
+        if(x.gt.1.0D0)xx=1.0D0
+        !do i=1,nfit-1
+        !tfunp=tfunp+ctem(i+1)*xx**i
+        !enddo
+        tfunp=0.0D0        
+      end function tfunp
+!
 
        function qfun(x)
        implicit none
@@ -2370,8 +2663,11 @@ module shared_mod
          !          0.2001*dum**5-8.4828e-2*dum**6
          ! endif
           qfun = q0 +0.16*x**2 ! ITPA n=6 TAE
-         !qfun=q0+x**2*(cq3-q0+(cq2-cq3+q0)*(1-psi)*(x**2-1)/(x**2-psi))
-         if(x.gt.1.0D0)qfun=q0+dq*(cq1+cq2)
+         ! qfun=q0+x**2*(cq3-q0+(cq2-cq3+q0)*(1-psi)*(x**2-1)/(x**2-psi)) !HL-2aa
+         !qfun = q0 + 0.5*x**2 + 0.8333*x**4 ! n=3 TAE
+         !qfun = 1.1 + 1.0*x**2 ! n=1 TAE
+         !if(x.gt.1.0D0)qfun=q0+dq*(cq1+cq2)
+         if(x.gt.1.0D0)qfun= 2.11 ! n=1 TAE
 
 !	return
        end function qfun
@@ -2403,9 +2699,11 @@ module shared_mod
          !dqfun=1.1D0*x
          !endif
           dqfun=0.32D0*x ! ITPA n=6 TAE
-         ! dqfun=-2*x*(q0-cq3+((psi-1)*(cq2-cq3+q0)*(x**2-1))/(x**2-psi))&
+         !dqfun=-2*x*(q0-cq3+((psi-1)*(cq2-cq3+q0)*(x**2-1))/(x**2-psi))&
          !      -x**2*((2*x*(psi-1)*(cq2-cq3+q0))/(x**2-psi)&
-         !      -(2*x*(psi-1)*(x**2-1)*(cq2-cq3+q0))/(x**2-psi)**2)
+         !      -(2*x*(psi-1)*(x**2-1)*(cq2-cq3+q0))/(x**2-psi)**2) ! hl-2a
+         !dqfun = 1.0*x + 3.3332*x**3 ! n=3 TAE
+         !dqfun =  2.0*x ! n=1 TAE
          if(x.gt.1.0D0)dqfun=0.0D0
 
 !	return
@@ -2440,7 +2738,7 @@ module shared_mod
         !          394.65*dum**7+91.049*dum**8
         !ddqfun=1.1D0
         !endif
-         ddqfun=0.32D0
+         ddqfun=0.32D0 ! ITPA n = 6 tae
         !ddqfun=2*cq3-2*q0&
         !         -4*x*((2*x*(psi-1)*(cq2-cq3+q0))/(x**2-psi)&
         !        -(2*x*(psi-1)*(x**2-1)*(cq2-cq3+q0))/(x**2-psi)**2)&
@@ -2448,7 +2746,9 @@ module shared_mod
         !        -(2*(psi-1)*(x**2-1)*(cq2-cq3+q0))/(x**2-psi)**2&
         !        -(8*x**2*(psi-1)*(cq2-cq3+q0))/(x**2-psi)**2&
         !        +(8*x**2*(psi-1)*(x**2-1)*(cq2-cq3+q0))/(x**2-psi)**3)&
-        !        -(2*(psi-1)*(x**2-1)*(cq2-cq3+q0))/(x**2-psi)
+        !        -(2*(psi-1)*(x**2-1)*(cq2-cq3+q0))/(x**2-psi) ! hl-2a
+        !ddqfun = 1.0 + 9.9996*x**2 ! n=3 TAE
+        !ddqfun = 2.0 ! n=1 TAE
         if(x.gt.1.0D0)ddqfun=0.0D0
 
 !	return
@@ -2491,7 +2791,7 @@ module shared_mod
          integer nfit,i,j
          parameter(nfit=5)
          integer nE1,numL1
-         real(r8) dum,dedum,dldum
+         real(r8) dum,dedum,dldum,cdum1,cdum2
         if (allocated(cden)) then
              deallocate(cden)
          endif
@@ -2505,24 +2805,29 @@ module shared_mod
          cq1=0.5D0
          !e=0.125D0
 !          
-         prot0 = 1.0 ! the mass in proton unit 1: H 2: D 3: T (BuP)
+         prot0 = 1.0 ! the mass in proton unit 1: H 2: D 3: T (Bulk ion)
          prot = 2.0  ! the mass in proton unit 1: H 2: D 3: T (EP)
-         zprt=1.0    ! the charge in proton unit
+         zprt = 1.0    ! the charge in proton unit (EP)
+         zprt0=1.0   ! the charge in proton unit (Bulk)
          !ekev=100    ! particle energy in kev for normalization
                      ! or temperature of maxwellian distribution
 !
          !ne0 = 1.08e+13 !cm^-3 EAST
-         ! ne0 = 1.0e+13 ! n=3 TAE, GMEC,Liu2024
+         !ne0 = 1.0e+13 ! n=3 TAE, GMEC,Liu2024
+         !ne0 = 4.142e+13 ! https://w3.pppl.gov/~ngorelen/TAE_lin.html
          ne0 = 2.0e+13 ! n=6 TAE, A. Könies et al., Nuclear Fusion 58, 126027 (2018)
          !ne0 = 1.2e+13 ! HL-2A
-!
-         eta_i = 5.0e-5
+         ti0 = 1.0D0 !keV axis temperature of ions
+         pi0 = 4.03D-11*ne0*ti0*1e3/(bkg*1e3)**2/2 ! axis normalized pressure of ions
+
+         etai = 5e-5
          read(2100,*)q0,q1,cq1,xini,xend,dalpha,dedge,&
-                   dedge1,e,gam,b0,b0_h,etai,lam_omg
+                   dedge1,e,gam,b0,b0_h,eta,lam
          print *, 'q0=',q0,'q1=',q1,'cq1=',cq1,'xini=',xini,&
                   'xend=',xend,'dalpha=',dalpha,'dedge=',dedge,&
                   'dedge1=',dedge1,'e=',e,'gam=',gam,&
-                  'b0=',b0,'b0_h=',b0_h,'etai=',etai,'lam=',lam_omg
+                  'b0=',b0,'b0_h=',b0_h,'eta=',eta,'lam=',lam,&
+                  'pi0=',pi0
 !        load r0 and delta r (a) for density profile of fast ions, nrho
 !        for X grid of sub check_mesh2
          read(2100,*) rr0,rrd, nrho
@@ -2554,10 +2859,11 @@ module shared_mod
         enddo
         close(2100)
 
-        read(3100,*) lam_omg
+        read(3100,*) lam
         close(3100)
 
-         omg = sqrt(lam_omg)
+         omg = sqrt(lam) ! normalized to vA_0/R0
+         print *, 'omg=',omg
          nE1 = 101
          numL1 = 101
          if (allocated(endum)) then
@@ -2574,7 +2880,7 @@ module shared_mod
          endif
          allocate(endum(nE1),fedum(nE1))
          allocate(fldum(numL1),lambdum(numL1))
-         dedum = (10*Eb - Ea)/float(nE1-1)
+         dedum = (Eb - Ea)/float(nE1-1)
          dldum = (Lb - La)/float(numL1-1)
          Ec32=(Ec/ekev)**1.5
          do j=1,numL1
@@ -2594,21 +2900,45 @@ module shared_mod
           enddo
           call simp(numL1,dldum,fldum,Cn)
 ! Cn for isotropic slow down 
-           do i=1,nE1
+         do i=1,nE1
                endum(i)=Ea + (i-1)*dedum
                E32=(endum(i)/ekev)**1.5+Ec32
                tE=(endum(i)-E0)/Ed
                fedum(i)=2.0*PI_D*sqrt(endum(i)/ekev)*&
                         erfc(tE)/E32
-            enddo
-            dum = dedum/ekev
+          enddo
+          dum = dedum/ekev
           call simp(nE1,dum,fedum,Cn)
 
+          do i=1,nE1
+               endum(i)=Ea + (i-1)*dedum
+               E32=(endum(i)/ekev)**1.5+Ec32
+               tE=(endum(i)-E0)/Ed
+               fedum(i)= sqrt(endum(i)/ekev)*&
+                        erfc(tE)/E32
+          enddo
+          dum = dedum/ekev
+          call simp(nE1,dum,fedum,cdum1)
+
+          do i=1,nE1
+               endum(i)=Ea + (i-1)*dedum
+               E32=(endum(i)/ekev)**1.5+Ec32
+               tE=(endum(i)-E0)/Ed
+               fedum(i)= (endum(i)/ekev)**1.5*&
+                        erfc(tE)/E32
+          enddo
+          dum = dedum/ekev
+          call simp(nE1,dum,fedum,cdum2)
+        
+          !b0_h=b0_h/2.0/(2.0*cdum2/3.0/cdum1) ! for slow down
+          !b0_h=b0_h/2.0                        ! for maxwellian
+          
          deallocate(endum)
          deallocate(fedum)
          deallocate(fldum)
          deallocate(lambdum)
          print *, 'Cn=',Cn
+         print *, 'T_h*n_h=', b0_h
 !
            open(8,file='result.out',status='unknown')
            vh=9.79*1e5/sqrt(prot)*sqrt(ekev*1e3)*sqrt(2.0)   ! EP velocity
@@ -2619,15 +2949,14 @@ module shared_mod
                                                         ! at axis cm/sec
            vA_bar = v_A0/vh ! normalized alfven velocity
 !
-           rhoh = vh/omeg0/rmaj/e
-           ! normalized to minor radius
-           rhoh_bar = 1.02e2*sqrt(prot)/zprt*sqrt(ekev*1e3)/(bkg*1e3)/rmaj
-           !gyroradius normalized to major radius
-
+           rhoh = vh/omeg0/rmaj/e ! hot gyroradius normalized to minor radius
+           rhoh_bar = 1.02e2*sqrt(prot)/zprt*sqrt(ekev*1e3)/(bkg*1e3)/rmaj !hot gyroradius normalized to major radius
+           rhoi_bar = 1.02e2*sqrt(prot0)/zprt0*sqrt(ti0*1e3)/(bkg*1e3)/rmaj ! thermal gyroradius normalized to major radius
 !
-           write(*,*) 'e=',real(e),'omega0=',omeg0, 'v_A0=',v_A0,&
+           write(*,*) 'e=',real(e),'omega0=',omeg0, &
                       'rhoh_bar:',real(rhoh_bar),'rhoh=',rhoh,&
-                       'vA_bar:', vA_bar,'bkg=',bkg
+                       'vA_bar:', vA_bar,'bkg=',bkg,&
+                       'rhoi_bar:',rhoi_bar
 
 
 

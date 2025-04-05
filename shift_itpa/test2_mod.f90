@@ -131,7 +131,7 @@
              orb_info = 0 ! 1: record traj1,traj2 0: not record
              fow_info = 1 ! 1: induce fow 0: not induce
              omg = omg*vA_bar ! omega in orbit code unit
-             omg1 = omg + cmplx(0.0,eta_i)
+             omg1 = omg + cmplx(0.0,etai)
              !omg1 = cmplx(real(omg),eta_i)
 
 !            mode numbers

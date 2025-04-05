@@ -1571,11 +1571,11 @@
 
 
 !     mesh grid
-      function fun_alpha(x,y,lam,sigma)
+      function fun_alpha(x,y,lamlam,sigma)
         implicit none
         !common/aspect/e!
         !real(r8) :: e, fun_alpha, x, y, lam
-        real(r8) ::  fun_alpha, x, y, lam
+        real(r8) ::  fun_alpha, x, y, lamlam
         real(r8) :: rr,zz, sigma
         !rr = 1.0 + e*x
         !zz = 0.0
@@ -1587,17 +1587,17 @@
 
         !b_nor = cdbbsval2d(knotr,knotz,kr,kz,bscoefscalb,rr,zz,0,0)
         if (sigma==1.0) then
-           fun_alpha = asin(sqrt(abs(1.0-lam*b_nor(zz,x)))) ! fixed negative value with alpha=0
+           fun_alpha = asin(sqrt(abs(1.0-lamlam*b_nor(zz,x)))) ! fixed negative value with alpha=0
         else
-           fun_alpha = -asin(sqrt(abs(1.0-lam*b_nor(zz,x))))
+           fun_alpha = -asin(sqrt(abs(1.0-lamlam*b_nor(zz,x))))
         end if
       end function
 !
-       function fun_alphap(x,y,lam,sigma)
+       function fun_alphap(x,y,lamlam,sigma)
         implicit none
         !common/aspect/e
         !real(r8) :: fun_alphap,x,y, lam, e
-        real(r8) :: fun_alphap,x,y,lam
+        real(r8) :: fun_alphap,x,y,lamlam
         real(r8) :: rr,zz, sigma,bnor1,bnorpr1,bnorpt1
         real(r8) :: dum
         !rr = 1.0 + e*x
@@ -1614,21 +1614,21 @@
         bnorpt1 = b_norpt_bar_rfpt(zz,x) ! fixed rfpt(0,x)=0
         dum = bnorpr1 + bnorpt1
         if (sigma==1.0) then
-           fun_alphap = 1.0/sqrt(lam*bnor1)*0.5/sqrt(abs(1.0-lam*bnor1))*&
-                    (-1.0)*lam*e*dum ! fixed negative value with alpha=0
+           fun_alphap = 1.0/sqrt(lamlam*bnor1)*0.5/sqrt(abs(1.0-lamlam*bnor1))*&
+                    (-1.0)*lamlam*e*dum ! fixed negative value with alpha=0
         else
-           fun_alphap = 1.0/sqrt(lam*bnor1)*0.5/sqrt(abs(1.0-lam*bnor1))*&
-                    lam*e*dum
+           fun_alphap = 1.0/sqrt(lamlam*bnor1)*0.5/sqrt(abs(1.0-lamlam*bnor1))*&
+                    lamlam*e*dum
 
         end if
       end function
 !
 !     arc length derive: ds/dx
-      function fun_s(x,y,lam,sigma)
+      function fun_s(x,y,lamlam,sigma)
         implicit none
-        real(r8) :: fun_s, x,y,lam,sigma
+        real(r8) :: fun_s, x,y,lamlam,sigma
 !
-        fun_s = sqrt(1.0 + fun_alphap(x,y,lam,sigma)**2)
+        fun_s = sqrt(1.0 + fun_alphap(x,y,lamlam,sigma)**2)
       end function
 !
       subroutine check_mesh
@@ -1639,7 +1639,7 @@
         ! num1: X for arc length integral
         integer,parameter :: nx=14,num=101,na=7,num1=21
         !common/aspect/e
-        real(r8) :: lam,x,rr,zz,sigma,sdum0,da,dE
+        real(r8) :: lamlam,x,rr,zz,sigma,sdum0,da,dE
         real(r8) :: xmin,xmax,adum,bnor,dx,xdum,temp,vbg
         ! s: arc length for X at alpha = 0
         real(r8) ::  s(nx-1),sdum(num)
@@ -1818,7 +1818,7 @@
         !Rmax:low filed side major radius 
         !R0: magnetic axis major radius
         !real(r8) :: e,lam,x,rr,zz,sigma,sdum0,da,dE,ds
-        real(r8) :: lam,x,rr,zz,sigma,sdum0,da,dE,ds
+        real(r8) :: x,rr,zz,sigma,sdum0,da,dE,ds
         real(r8) :: xmin,xmax,adum,bnor,dx,xdum,temp,vbg
         real(r8) :: tmps, dxdum, rr1, rr2, pol1, pol2, x1, x2
         ! s: arc length for X at alpha = 0
@@ -1970,7 +1970,7 @@
         !Rmax:low filed side major radius 
         !R0: magnetic axis major radius
         !real(r8) :: e,lam,x,rr,zz,sigma,sdum0,da,dE,ds
-        real(r8) :: lam,x,rr,zz,sigma,sdum0,da,dE,ds
+        real(r8) :: x,rr,zz,sigma,sdum0,da,dE,ds
         real(r8) :: xmin,xmax,adum,bnor,dx,xdum,vbg,rdum
         real(r8) :: tmpfpol,temp,temp1,temp2
         real(r8) :: tmps, dxdum, rr1, rr2, pol1, pol2, x1, x2
@@ -2266,7 +2266,7 @@
         !Rmax:low filed side major radius
         !R0: magnetic axis major radius
         !real(r8) :: e,lam,x,rr,zz,sigma,sdum0,da,dE,ds
-        real(r8) :: lam,x,rr,zz,sigma,sdum0,da,dE,ds
+        real(r8) :: x,rr,zz,sigma,sdum0,da,dE,ds
         real(r8) :: xmin,xmax,adum,bnor,dx,xdum,vbg,rdum
         real(r8) :: almin, almax
         real(r8) :: tmpfpol,temp0,temp,temp1,temp2
@@ -2597,7 +2597,7 @@
         !R0: magnetic axis major radius
         !a: minor radius
         !real(r8) :: e,lam,x,rr,zz,sigma,sdum0,da,dE,ds
-        real(r8) :: lam,x,rr,zz,sigma,sdum0,da,dE,ds
+        real(r8) :: x,rr,zz,sigma,sdum0,da,dE,ds
         real(r8) :: xmin,xmax,adum,bnor,dx,xdum,vbg,vbgp
         real(r8) :: almin, almax,rdum
         real(r8) :: tmpfpol,temp0,temp,temp1,temp2
@@ -3088,7 +3088,7 @@
         !R0: magnetic axis major radius
         !a: minor radius
         !real(r8) :: e,lam,x,rr,zz,sigma,sdum0,da,dE,ds
-        real(r8) :: lam,x,rr,zz,sigma,sdum0,dx_ref,dx_ref0,da_ref,dE,ds
+        real(r8) :: x,rr,zz,sigma,sdum0,dx_ref,dx_ref0,da_ref,dE,ds
         real(r8) :: xmin,xmax,adum,bnor,dx,xdum,vbg,vbgp
         real(r8) :: almin, almax,rdum,sdum
         real(r8) :: tmpfpol,temp0,temp,temp1,temp2
@@ -3663,7 +3663,7 @@
         integer,parameter :: num=101,num1=101
         !common/aspect/e
         !real(r8) :: e,lam,x,rr,zz,sigma,sdum0,da,dE,ds
-        real(r8) :: lam,x,rr,zz,sigma,sdum0,da,dE,ds
+        real(r8) :: x,rr,zz,sigma,sdum0,da,dE,ds
         real(r8) :: xmin,xmax,adum,bnor,dx,xdum,temp,vbg
         real(r8) :: tmps, dxdum, rr1, rr2, pol1, pol2, x1, x2
         real(r8) ::  sdum(num)
@@ -3776,7 +3776,7 @@
       subroutine check_flux2 ! given q=q(psi), obtain psi normaized 
         implicit none        ! to a**2*B(0) too
         integer,parameter :: num=101,num1=101
-        real(r8) :: lam,x,rr,zz,sigma,sdum0,da,dE,ds
+        real(r8) :: x,rr,zz,sigma,sdum0,da,dE,ds
         real(r8) :: xmin,xmax,adum,bnor,dx,xdum,temp,vbg
         real(r8) :: tmps, dxdum, rr1, rr2, pol1, pol2, x1, x2
         real(r8) ::  sdum(num)
