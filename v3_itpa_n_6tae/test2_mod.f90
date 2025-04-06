@@ -24,7 +24,7 @@
              integer :: ifem, mfem, local_ifow, local_ifow1
              integer :: istart, iend, array_size, iarray
              integer ::  nprt_proc
-             integer :: im, im1,ma, mb, idm
+             integer :: im, im1,ma, mb, idm, idm1
              integer :: st2,et2,count_rate
              integer(8) :: ik_proc,ik
              !common/resistive/etai,omg
@@ -765,12 +765,14 @@
                                  delta_r = dum3/e*cos(temp)*dum6 
                                  dum1 = xrdum + delta_r
                                  ! boundary conditions
-                                 if (dum1 > 1.0) then 
-                                    dum1 = xrdum - delta_r
+                                 if (dum1 > 1.0 .or. dum1 < 0.0) then
+                                    ! Set all points to the original position
+                                    do idm1 = 1, ngyro
+                                       psirdum2(idm1,p) = xrdum
+                                       thetadum2(idm1,p) = dum4
+                                    enddo
+                                       exit ! Exit the loop
                                  endif
-                                 if (dum1 < 0.0) then
-                                    dum1 = xrdum - delta_r
-                                  endif
                                  psirdum2(idm,p) = dum1 ! save positions
                                  delta_theta = dum3/e/dum6*&
                                      (cos(temp)*grt(dum4,xrdum)-&
