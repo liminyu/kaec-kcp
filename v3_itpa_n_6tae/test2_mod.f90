@@ -142,8 +142,8 @@
              omg1 = omg1 + cmplx(0.0,etai)
              !omg1 = cmplx(real(omg),etai)
 !            mode numbers
-             nomode = 5
-             nopmode = 28
+             nomode = 4
+             nopmode = 7
              nogp = nog + 1
              if (allocated(mode)) then
                 deallocate(mode)
@@ -170,11 +170,11 @@
              !temp_aint_KCT4Dp=(0.0D0,0.0D0)
 
 !            harmonics setting
-             mode(1) = 8
-             mode(2) = 9
-             mode(3) = 10
-             mode(4) = 11
-             mode(5) = 12
+             mode(1) = 9
+             mode(2) = 10
+             mode(3) = 11
+             mode(4) = 12
+             !mode(5) = 12
             ! mode(6) = 9
             !mode(7) = 10
              !mode(8) = 8
@@ -184,40 +184,40 @@
 !            poloidal mode index shift value
              midx = mode(1) - 1
 
-             pmode(1) = 13
-             pmode(2) = 12
-             pmode(3) = 11
-             pmode(4) = 10
-             pmode(5) = 9
-             pmode(6) = 8
-             pmode(7) = 7
-             pmode(8) = 6
-             pmode(9) = 5
-             pmode(10) = 4
-             pmode(11) = 3
-             pmode(12) = 2
-             pmode(13) = 1
-             pmode(14) = 0
-             pmode(15) = -1
-             pmode(16) = -2
-             pmode(17) = -3
-             pmode(18) = -4
-             pmode(19) = -5
-             pmode(20) = -6
-             pmode(21) = -7
-             pmode(22) = -8
-             pmode(23) = -9
-             pmode(24) = -10
-             pmode(25) = -11
-             pmode(26) = -12
-             pmode(27) = -13
-             pmode(28) = -14
+             pmode(1) = -8
+             pmode(2) = -9
+             pmode(3) = -10
+             pmode(4) = -11
+             pmode(5) = -12
+             pmode(6) = -13
+             pmode(7) = -14
+             !pmode(8) = 6
+             !pmode(9) = 5
+             !pmode(10) = 4
+             !pmode(11) = 3
+             !pmode(12) = 2
+             !pmode(13) = 1
+             !pmode(14) = 0
+             !pmode(15) = -1
+             !pmode(16) = -2
+             !pmode(17) = -3
+             !pmode(18) = -4
+             !pmode(19) = -5
+             !pmode(20) = -6
+             !pmode(21) = -7
+             !pmode(22) = -8
+             !pmode(23) = -9
+             !pmode(24) = -10
+             !pmode(25) = -11
+             !pmode(26) = -12
+             !pmode(27) = -13
+             !pmode(28) = -14
 
              print *, 'delta=',delta,'dtheta=',dtheta
              print *, 'pmode=', pmode
 !            reset mode used
-             nomode = 5
-             nopmode = 28
+             nomode = 4
+             nopmode = 7
 !            h = (x2-x1)/nstep
              h = 1.0 ! dt: time step with unit of gyro-frequency
              nstep=int((x2-x1)/h) ! number of time step
