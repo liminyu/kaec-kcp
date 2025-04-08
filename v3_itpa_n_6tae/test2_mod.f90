@@ -137,7 +137,7 @@
              kct_info = 1 ! 1: obtain kct_4D term 0: not obtain
              orb_info = 0 ! 1: record traj1,traj2 0: not record
              fow_info = 1 ! 1: induce fow 0: not induce
-             gyro_info = 1 ! 1: gyro-average 0: not gyro-average
+             gyro_info = 0 ! 1: gyro-average 0: not gyro-average
              omg1 = omg*vA_bar ! omega in orbit code unit
              omg1 = omg1 + cmplx(0.0,etai)
              !omg1 = cmplx(real(omg),etai)
@@ -575,14 +575,14 @@
 !                           phase positions  and frequencies
 !                           recover data units for spline-interp
                             ttdum = abs(tt(1)-tt(2))
-                           !if (itrap.eq.1) then
-                           !   wtheta = 2.0*pi/ttdum ! trapped ions
+                           if (itrap.eq.1) then
+                              wtheta = 2.0*pi/ttdum ! trapped ions
                               !wtheta = 2.0*pi/ttdum*sign(1.0,ptcha(iname)) 
-                           !else
-                           !   wtheta = 2.0*pi/ttdum*sign(1.0,ptcha(iname)) ! passing ions
+                           else
+                              wtheta = 2.0*pi/ttdum*sign(1.0,ptcha(iname)) ! passing ions
                               !wtheta = 2.0*pi/ttdum
-                           !endif
-                            wtheta = 2.0*pi/ttdum ! shen wei fixed 250321
+                           endif
+                            !wtheta = 2.0*pi/ttdum ! shen wei fixed 250321
                             wtheta2 = (thth(2)-thth(1))/ttdum
                             wphi =((pp(2)-pp(1))/(ttdum))
                             dum8 = tt(1)

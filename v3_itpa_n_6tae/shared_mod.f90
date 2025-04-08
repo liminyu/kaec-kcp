@@ -3016,7 +3016,7 @@ module shared_mod
           call simp(nE1,dum,fedum,cdum2)
         
           !b0_h=b0_h/2.0/(2.0*cdum2/3.0/cdum1) ! for slow down
-          b0_h=b0_h/2.0                        ! for maxwellian
+          !b0_h=b0_h/2.0                        ! for maxwellian
           
          deallocate(endum)
          deallocate(fedum)
