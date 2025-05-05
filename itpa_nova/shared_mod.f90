@@ -1428,7 +1428,7 @@ module shared_mod
            grrpx=a0+a1*cos(t)+a2*cos(2.0*t)+a3*cos(3.0*t)&
               +a4*cos(4.0*t)+a5*cos(5.0*t)+a6*cos(6.0*t)&
               +a7*cos(7.0*t)+a8*cos(8.0*t) 
-          !   grrpx=a0+a1*cos(t)+a2*cos(2.0*t)
+         !    grrpx=a0+a1*cos(t)+a2*cos(2.0*t)
           !grrpx=0.0
           !grrpx = e*cos(t)/2.0
           !grrpx = e*cos(t)/2.0-&
@@ -1502,8 +1502,8 @@ module shared_mod
               +4.0*a4*cos(4.0*t)+5.0*a5*cos(5.0*t)+6.0*a6*cos(6.0*t)&
               +7.0*a7*cos(7.0*t)+8.0*a8*cos(8.0*t))/x
          !gtrpt=(a1*cos(t)+2.0*a2*cos(2.0*t))
-          !gtrpt=-thetaspxt(t,x)/thetaspt(t,x)-&
-          !       rfpt(t,x)/thetaspt(t,x)*grt(t,x)
+         ! gtrpt=-thetaspxt(t,x)/thetaspt(t,x)-&
+         !        rfpt(t,x)/thetaspt(t,x)**2*grt(t,x)
           !gtrpt=-rfpx(t,x)/thetaspt(t,x)-&
           !       rfpt(t,x)/thetaspt(t,x)*grt(t,x)
           !gtrpt=-(eps1(x)+2.0*ddel(x))*cos(t)/x
@@ -2042,7 +2042,7 @@ module shared_mod
 !                 37.29D0*x**3+5.035D0*x**2-0.7637D0*x+1.005D0)
 !        beta=b0*(-9.425D0*x**5+18.19D0*x**4-8.598D0*x**3-0.8569D0*x**2-0.3393D0*x+0.9966D0)
 !       beta=b0*(1.0D0-1.0D0*x**2)
-!       beta=b0*(1.0 - 0.95*x**2- 0.05*x**4) ! ITPA n=6
+        !beta=b0*(1.0 - 0.95*x**2- 0.05*x**4) ! ITPA n=6
         endfunction beta
 !
         function betap(x)
@@ -3226,7 +3226,7 @@ module shared_mod
          !      6.3498*dum**7
          !dqfun=1.1D0*x
          !endif
-          !dqfun=0.32D0*x ! ITPA n=6 TAE
+         ! dqfun=0.32D0*x ! ITPA n=6 TAE
          !dqfun=-2*x*(q0-cq3+((psi-1)*(cq2-cq3+q0)*(x**2-1))/(x**2-psi))&
          !      -x**2*((2*x*(psi-1)*(cq2-cq3+q0))/(x**2-psi)&
          !      -(2*x*(psi-1)*(x**2-1)*(cq2-cq3+q0))/(x**2-psi)**2) ! hl-2a
@@ -3375,7 +3375,7 @@ module shared_mod
          cq1=0.5D0
          !e=0.125D0
 !          
-         prot0 = 2.0 ! the mass in proton unit 1: H 2: D 3: T (Bulk ion)
+         prot0 = 1.0 ! the mass in proton unit 1: H 2: D 3: T (Bulk ion)
          prot = 2.0  ! the mass in proton unit 1: H 2: D 3: T (EP)
          zprt = 1.0    ! the charge in proton unit (EP)
          zprt0=1.0   ! the charge in proton unit (Bulk)
@@ -3386,12 +3386,12 @@ module shared_mod
 !
          !ne0 = 1.08e+13 !cm^-3 EAST
          !ne0 = 1.0e+13 ! n=3 TAE, GMEC,Liu2024
-         ne0 = 3.3457e+13 ! d3d
+         !ne0 = 3.3457e+13 ! d3d
          !ne0 = 4.142e+13 ! https://w3.pppl.gov/~ngorelen/TAE_lin.html
-         !ne0 = 2.0e+13 ! n=6 TAE, A. Könies et al., Nuclear Fusion 58, 126027 (2018)
+         ne0 = 2.0e+13 ! n=6 TAE, A. Könies et al., Nuclear Fusion 58, 126027 (2018)
          !ne0 = 1.2e+13 ! HL-2A
-         !ti0 = 1.0D0 !keV axis temperature of ions
-         ti0 = 2.0D0
+         ti0 = 1.0D0 !keV axis temperature of ions
+         !ti0 = 2.0D0
          pi0 = 4.03D-11*ne0*ti0*1e3/(bkg*1e3)**2/2.0 ! axis normalized pressure of ions
                                                      ! to B(0)**2
 
@@ -3511,7 +3511,7 @@ module shared_mod
           call simp(nE1,dum,fedum,cdum2)
         
           !b0_h=b0_h/2.0/(2.0*cdum2/3.0/cdum1) ! for slow down
-          b0_h=b0_h/2.0                        ! for maxwellian
+          !b0_h=b0_h/2.0                        ! for maxwellian
           
          deallocate(endum)
          deallocate(fedum)
