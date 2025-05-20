@@ -386,7 +386,7 @@ module supralu_mod
       integer n, i, j, k, ii1, ii2, ii3
       integer matsize,rank,base
       complex(r8), allocatable :: rhs(:)
-      real(r8) :: residue, norm, ee
+      real(r8) :: residue, norm 
       complex(r8) :: newv_b_v, newv_b_newv
       !complex(r8) :: rho
       type(sparseC16_obj) :: Cmat,B0mat,Dmat
@@ -443,6 +443,7 @@ module supralu_mod
          norm = sqrt(dot_product(x, x))
          x = x/norm
      end do
+     print *, 'ee=',ee
      write(3100,*) lambda
      close(3100)
      !
